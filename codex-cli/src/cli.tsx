@@ -784,7 +784,6 @@ async function runQuietMode({
       console.log(formatResponseItemForQuietMode(item));
     },
     onLoading: () => {
-      // eslint-disable-next-line no-empty
       /* intentionally ignored in quiet mode */
     },
     getCommandConfirmation: (
@@ -798,7 +797,6 @@ async function runQuietMode({
       return Promise.resolve({ review: reviewDecision });
     },
     onLastResponseId: () => {
-      // eslint-disable-next-line no-empty
       /* intentionally ignored in quiet mode */
     },
   });

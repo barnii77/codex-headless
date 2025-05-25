@@ -1,4 +1,4 @@
-<h1 align="center">Unofficial Headless OpenAI Codex CLI (slightly hacky)</h1>
+<h1 align="center">Unofficial Headless OpenAI Codex CLI (<del>slightly</del> very hacky)</h1>
 <p align="center">Lightweight coding agent that runs in your terminal <i>and now outputs raw json instead of pretty UIs</i></p>
 
 # Why?

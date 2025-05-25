@@ -53,6 +53,8 @@ import { render } from "ink";
 import meow from "meow";
 import os from "os";
 import path from "path";
+import { setSessionId, getSessionId } from "./utils/session";
+import { randomUUID } from "crypto";
 import React from "react";
 
 // Call this early so `tail -F "$TMPDIR/oai-codex/codex-cli-latest.log"` works
@@ -213,9 +215,28 @@ const cli = meow(
         description: `Run in full-context editing approach. The model is given the whole code
           directory as context and performs changes in one go without acting.`,
       },
-    },
+      // Session management flags
+      sessionId: {
+        type: "string",
+        description:
+          "Session ID to load or resume (allows reusing existing session files)",
+      },
+      updateSessionFile: {
+        type: "boolean",
+        description:
+          "Continuously update the session file with new messages (requires --session-id)",
+      },
   },
+},
 );
+
+// Handle --session-id and --update-session-file flags
+if (cli.flags.sessionId) {
+  setSessionId(cli.flags.sessionId);
+}
+if (cli.flags.updateSessionFile) {
+  process.env["CODEX_UPDATE_SESSION_FILE"] = "1";
+}
 
 // ---------------------------------------------------------------------------
 // Global flag handling
@@ -541,16 +562,107 @@ if (cli.flags.quiet) {
         ? AutoApprovalMode.AUTO_EDIT
         : config.approvalMode || AutoApprovalMode.SUGGEST;
 
-  await runQuietMode({
-    prompt,
-    imagePaths: imagePaths || [],
-    approvalPolicy: quietApprovalPolicy,
-    additionalWritableRoots,
-    config,
-  });
-  onExit();
-  process.exit(0);
-}
+  if (cli.flags.updateSessionFile) {
+    if (!cli.flags.sessionId) {
+      console.error("Error: --update-session-file requires --session-id");
+      process.exit(1);
+    }
+    const sessionsDir = path.join(os.homedir(), ".codex", "sessions");
+    if (!fs.existsSync(sessionsDir)) {
+      console.error(`Session directory not found: ${sessionsDir}`);
+      process.exit(1);
+    }
+    const files = fs.readdirSync(sessionsDir);
+    const pattern = new RegExp(`^rollout-.*-${cli.flags.sessionId}\\.json$`);
+    const matched = files.filter((f) => pattern.test(f));
+    if (matched.length === 0) {
+      console.error(`No session file found for session-id ${cli.flags.sessionId}`);
+      process.exit(1);
+    }
+    let selected = matched[0];
+    let latestMtime = fs.statSync(path.join(sessionsDir, selected)).mtimeMs;
+    for (const f of matched.slice(1)) {
+      const mtime = fs.statSync(path.join(sessionsDir, f)).mtimeMs;
+      if (mtime > latestMtime) {
+        selected = f;
+        latestMtime = mtime;
+      }
+    }
+    const sessionFilePath = path.join(sessionsDir, selected);
+    let prevData;
+    try {
+      prevData = JSON.parse(fs.readFileSync(sessionFilePath, "utf8"));
+    } catch (err) {
+      console.error("Error reading session file:", err);
+      process.exit(1);
+    }
+    const itemsSoFar: Array<ResponseItem> = Array.isArray(prevData.items)
+      ? prevData.items
+      : [];
+    const instructionsSoFar: string =
+      prevData.session?.instructions ?? config.instructions;
+
+    const agent = new AgentLoop({
+      model: config.model,
+      config: config,
+      instructions: config.instructions,
+      provider: config.provider,
+      approvalPolicy: quietApprovalPolicy,
+      additionalWritableRoots,
+      disableResponseStorage: config.disableResponseStorage,
+      onItem: (item: ResponseItem) => {
+        // Print the response item
+        // eslint-disable-next-line no-console
+        console.log(formatResponseItemForQuietMode(item));
+        try {
+          if (fs.existsSync(sessionFilePath)) {
+            const backupPath = sessionFilePath.replace(
+              /\.json$/,
+              `-backup-${randomUUID()}.json`,
+            );
+            fs.copyFileSync(sessionFilePath, backupPath);
+          }
+        } catch {}
+        itemsSoFar.push(item);
+        const newData = {
+          session: {
+            timestamp: new Date().toISOString(),
+            id: cli.flags.sessionId,
+            instructions: instructionsSoFar,
+          },
+          items: itemsSoFar,
+        };
+        try {
+          fs.writeFileSync(sessionFilePath, JSON.stringify(newData, null, 2), "utf8");
+        } catch (err) {
+          console.error("Error writing session file:", err);
+        }
+      },
+      onLoading: () => {},
+      getCommandConfirmation: (): Promise<CommandConfirmation> => {
+        const reviewDecision =
+          quietApprovalPolicy === AutoApprovalMode.FULL_AUTO
+            ? ReviewDecision.YES
+            : ReviewDecision.NO_CONTINUE;
+        return Promise.resolve({ review: reviewDecision });
+      },
+      onLastResponseId: () => {},
+    });
+    const inputItem = await createInputItem(prompt, imagePaths || []);
+    await agent.run([inputItem]);
+    onExit();
+    process.exit(0);
+  } else {
+    await runQuietMode({
+      prompt,
+      imagePaths: imagePaths || [],
+      approvalPolicy: quietApprovalPolicy,
+      additionalWritableRoots,
+      config,
+    });
+    onExit();
+    process.exit(0);
+  }
 
 // Default to the "suggest" policy.
 // Determine the approval policy to use in interactive mode.

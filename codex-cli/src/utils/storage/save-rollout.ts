@@ -19,6 +19,21 @@ async function saveRolloutAsync(
   const filename = `rollout-${ts}-${sessionId}.json`;
   const filePath = path.join(SESSIONS_ROOT, filename);
   const config = loadConfig();
+  // Backup existing session file before writing, if enabled
+  if (process.env.CODEX_UPDATE_SESSION_FILE) {
+    try {
+      // Ensure the file exists
+      await fs.stat(filePath);
+      // Generate backup filename with timestamp to millisecond accuracy
+      const backupTimestamp = timestamp.replace(/[:.]/g, "-");
+      const backupFilename = filename.replace(/\.json$/, "") +
+        `-backup-${backupTimestamp}.json`;
+      const backupPath = path.join(SESSIONS_ROOT, backupFilename);
+      await fs.copyFile(filePath, backupPath);
+    } catch {
+      // ignore if file does not exist or backup fails
+    }
+  }
 
   try {
     await fs.writeFile(

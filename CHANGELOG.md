@@ -4,6 +4,10 @@ You can install any of these versions: `npm install -g codex@version`
 
 ## `0.1.2505172129`
 
+### 🚀 Features
+
+- Introduce headless session management: add `--session-id <id>` and `--update-session-file` flags to quiet mode, allowing resuming existing session files and continuously updating them with new messages (with automatic backups using `-backup-<uuid>.json`).
+
 ### 🪲 Bug Fixes
 
 - Add node version check (#1007)

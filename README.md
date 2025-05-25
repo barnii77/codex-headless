@@ -1,5 +1,59 @@
-<h1 align="center">OpenAI Codex CLI</h1>
-<p align="center">Lightweight coding agent that runs in your terminal</p>
+<h1 align="center">Unofficial Headless OpenAI Codex CLI (slightly hacky)</h1>
+<p align="center">Lightweight coding agent that runs in your terminal <i>and now outputs raw json instead of pretty UIs</i></p>
+
+# Why?
+
+Normal Codex supports `--quiet` (or `-q`), which allows you to pass a single prompt to task codex with.
+It will output one line of JSON for every message that would normally be displayed in the UI.
+However, it does not allow calling this with the context of existing sessions, meaning you have to take
+a big usability hit. While that may not be relevant for automated tasks, it very much is if you are, for example, trying to build
+an alternative frontend for Codex (e.g. a discord bot).  
+That's where this fork comes into play.
+
+# Installing
+
+## Option 1: download [dist/cli.js](dist/cli.js)
+
+## Option 2: build it yourself
+
+```shell
+# clone the repo (if you haven't already)
+git clone https://github.com/barnii77/codex-headless.git
+
+# go to the codex-cli subdir
+cd codex-headless/codex-cli
+
+# build
+corepack enable
+pnpm install
+pnpm build
+
+# run it :)
+node ./dist/cli.js --help
+```
+
+# How to use
+
+First of all, pass `-q` or `--quiet` (same thing) to run in headless mode. This will, by default, run in one-shot mode, i.e. the session is over after one message and not saved.
+
+To fix this, I have added two CLI options:
+1. `--session-id`: pass the UUID part of a session file in `~/.codex/sessions`.  
+E.g. File is at `~/.codex/sessions/rollout-2025-05-25-f155748d-63d2-4561-a499-aefb5a2c39ba.json`
+---> ID = `f155748d-63d2-4561-a499-aefb5a2c39ba`.
+2. `--update-session-file`: If set, the file provided by `--session-id` will be updated with the user query and model thoughts + tool calls + response, i.e. all
+the JSON written to stdout. This option does not affect what is written to stdout, it just complements it.
+
+The combination of these two options gives you the ability to relatively easily emulate the full Codex UI experience in headless mode.
+
+## Example Usage
+
+```shell
+./cli.js -q "Please summarize everything we have done so far." --session-id "f155748d-63d2-4561-a499-aefb5a2c39ba" --update-session-file
+```
+
+---
+
+# Normal Codex Docs ahead
 
 <p align="center"><code>npm i -g @openai/codex</code></p>
 

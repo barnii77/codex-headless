@@ -74,12 +74,15 @@ esbuild
     entryPoints: ["src/cli.tsx"],
     // Do not bundle the contents of package.json at build time: always read it
     // at runtime.
-    external: ["../package.json"],
+    //external: ["../package.json"],
+    loader: {
+      '.json': 'json',
+    },
     bundle: true,
     format: "esm",
     platform: "node",
     tsconfig: "tsconfig.json",
-    outfile: isDevBuild ? `${OUT_DIR}/cli-dev.js` : `${OUT_DIR}/cli.js`,
+    outfile: isDevBuild ? `${OUT_DIR}/cli-dev.js` : `${OUT_DIR}/cli.mjs`,
     minify: !isDevBuild,
     sourcemap: isDevBuild ? "inline" : true,
     plugins,

@@ -12,7 +12,7 @@ That's where this fork comes into play.
 
 # Installing
 
-## Option 1: download [dist/cli.js](dist/cli.js)
+## Option 1: download [dist/cli.mjs](dist/cli.mjs)
 
 ## Option 2: build it yourself
 

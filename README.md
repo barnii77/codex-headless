@@ -40,7 +40,7 @@ To fix this, I've added `--session-id`, with which pass the UUID part of a sessi
 E.g. File is at `~/.codex/sessions/rollout-2025-05-25-f155748d-63d2-4561-a499-aefb5a2c39ba.json`
 ---> ID = `f155748d-63d2-4561-a499-aefb5a2c39ba`.
 
-The combination of these two options gives you the ability to relatively easily emulate the full Codex UI experience in headless mode.
+This option gives you the ability to relatively easily emulate the full Codex UI experience in headless mode.
 
 ## Example Usage
 

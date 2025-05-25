@@ -36,19 +36,16 @@ node ./dist/cli.js --help
 
 First of all, pass `-q` or `--quiet` (same thing) to run in headless mode. This will, by default, run in one-shot mode, i.e. the session is over after one message and not saved.
 
-To fix this, I have added two CLI options:
-1. `--session-id`: pass the UUID part of a session file in `~/.codex/sessions`.  
+To fix this, I've added `--session-id`, with which pass the UUID part of a session file in `~/.codex/sessions`.  
 E.g. File is at `~/.codex/sessions/rollout-2025-05-25-f155748d-63d2-4561-a499-aefb5a2c39ba.json`
 ---> ID = `f155748d-63d2-4561-a499-aefb5a2c39ba`.
-2. `--update-session-file`: If set, the file provided by `--session-id` will be updated with the user query and model thoughts + tool calls + response, i.e. all
-the JSON written to stdout. This option does not affect what is written to stdout, it just complements it.
 
 The combination of these two options gives you the ability to relatively easily emulate the full Codex UI experience in headless mode.
 
 ## Example Usage
 
 ```shell
-./cli.js -q "Please summarize everything we have done so far." --session-id "f155748d-63d2-4561-a499-aefb5a2c39ba" --update-session-file
+./cli.js -q "Please summarize everything we have done so far." --session-id "f155748d-63d2-4561-a499-aefb5a2c39ba"
 ```
 
 ---

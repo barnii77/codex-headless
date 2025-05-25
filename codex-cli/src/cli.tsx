@@ -203,6 +203,7 @@ const cli = meow(
 
       disableResponseStorage: {
         type: "boolean",
+        default: true,
         description:
           "Disable server-side response storage (sends full conversation context with every request)",
       },
@@ -223,6 +224,7 @@ const cli = meow(
       },
       updateSessionFile: {
         type: "boolean",
+        default: true,
         description:
           "Continuously update the session file with new messages (requires --session-id)",
       },
@@ -412,11 +414,8 @@ if (!apiKey && !NO_API_KEY_REQUIRED.has(provider.toLowerCase())) {
   process.exit(1);
 }
 
-const flagPresent = Object.hasOwn(cli.flags, "disableResponseStorage");
-
-const disableResponseStorage = flagPresent
-  ? Boolean(cli.flags.disableResponseStorage) // value user actually passed
-  : (config.disableResponseStorage ?? false); // fall back to YAML, default to false
+// Determine whether to disable server-side storage; default to true unless explicitly turned off
+const disableResponseStorage = Boolean(cli.flags.disableResponseStorage);
 
 config = {
   apiKey,
@@ -604,13 +603,19 @@ if (cli.flags.quiet) {
     const itemsSoFar: Array<ResponseItem> = Array.isArray(prevData.items)
       ? prevData.items
       : [];
+    // Preserve the original session instructions or fall back to current config
     const instructionsSoFar: string =
       prevData.session?.instructions ?? config.instructions;
+    // Determine the last assistant response ID to resume server-side context
+    const lastResponseId = itemsSoFar.length > 0 && itemsSoFar[itemsSoFar.length - 1].id
+      ? itemsSoFar[itemsSoFar.length - 1].id
+      : "";
 
     const agent = new AgentLoop({
       model: config.model,
       config: config,
-      instructions: config.instructions,
+      // Resume with instructions from the existing session
+      instructions: instructionsSoFar,
       provider: config.provider,
       approvalPolicy: quietApprovalPolicy,
       additionalWritableRoots,
@@ -656,7 +661,21 @@ if (cli.flags.quiet) {
       onLastResponseId: () => {},
     });
     const inputItem = await createInputItem(prompt, imagePaths || []);
-    await agent.run([inputItem]);
+    if (config.disableResponseStorage) {
+      // Include full session history as context when not using server-side storage
+      const previousInputs = itemsSoFar
+        .filter(item => !(item.type === 'message' && item.role === 'system') && item.type !== 'reasoning')
+        .map(item => {
+          const clean = { ...item } as any;
+          delete clean.id;
+          delete clean.status;
+          return clean;
+        });
+      await agent.run([...previousInputs, inputItem]);
+    } else {
+      // Resume using server-side context
+      await agent.run([inputItem], lastResponseId);
+    }
     onExit();
     process.exit(0);
   } else {

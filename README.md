@@ -48,6 +48,12 @@ This option gives you the ability to relatively easily emulate the full Codex UI
 ./cli.js -q "Please summarize everything we have done so far." --session-id "f155748d-63d2-4561-a499-aefb5a2c39ba"
 ```
 
+This will then output a `\n`-separated list of JSON objects to stdout where each line is one UI message. If you want to use this fork in your process, you are responsible for parsing stdout and also for deduplicating the messages by checking before making a request how many messages there already are.
+
+# Demo
+
+![DEMO_IMAGE](docs/screenshot_headless_custom_session.png)
+
 ---
 
 # Normal Codex Docs ahead

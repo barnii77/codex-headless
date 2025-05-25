@@ -45,16 +45,16 @@ import { createInputItem } from "./utils/input-utils";
 import { initLogger } from "./utils/logger/log";
 import { isModelSupportedForResponses } from "./utils/model-utils.js";
 import { parseToolCall } from "./utils/parsers";
+import { setSessionId } from "./utils/session";
 import { onExit, setInkRenderer } from "./utils/terminal";
 import chalk from "chalk";
 import { spawnSync } from "child_process";
+import { randomUUID } from "crypto";
 import fs from "fs";
 import { render } from "ink";
 import meow from "meow";
 import os from "os";
 import path from "path";
-import { setSessionId, getSessionId } from "./utils/session";
-import { randomUUID } from "crypto";
 import React from "react";
 
 // Call this early so `tail -F "$TMPDIR/oai-codex/codex-cli-latest.log"` works
@@ -564,11 +564,13 @@ if (cli.flags.quiet) {
 
   if (cli.flags.updateSessionFile) {
     if (!cli.flags.sessionId) {
+      // eslint-disable-next-line no-console
       console.error("Error: --update-session-file requires --session-id");
       process.exit(1);
     }
     const sessionsDir = path.join(os.homedir(), ".codex", "sessions");
     if (!fs.existsSync(sessionsDir)) {
+      // eslint-disable-next-line no-console
       console.error(`Session directory not found: ${sessionsDir}`);
       process.exit(1);
     }
@@ -576,10 +578,12 @@ if (cli.flags.quiet) {
     const pattern = new RegExp(`^rollout-.*-${cli.flags.sessionId}\\.json$`);
     const matched = files.filter((f) => pattern.test(f));
     if (matched.length === 0) {
+      // eslint-disable-next-line no-console
       console.error(`No session file found for session-id ${cli.flags.sessionId}`);
       process.exit(1);
     }
-    let selected = matched[0];
+    // After checking matched.length > 0 above, matched[0] is guaranteed
+    let selected = matched[0]!;
     let latestMtime = fs.statSync(path.join(sessionsDir, selected)).mtimeMs;
     for (const f of matched.slice(1)) {
       const mtime = fs.statSync(path.join(sessionsDir, f)).mtimeMs;
@@ -593,6 +597,7 @@ if (cli.flags.quiet) {
     try {
       prevData = JSON.parse(fs.readFileSync(sessionFilePath, "utf8"));
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error("Error reading session file:", err);
       process.exit(1);
     }
@@ -622,6 +627,7 @@ if (cli.flags.quiet) {
             );
             fs.copyFileSync(sessionFilePath, backupPath);
           }
+        // eslint-disable-next-line no-empty
         } catch {}
         itemsSoFar.push(item);
         const newData = {
@@ -635,6 +641,7 @@ if (cli.flags.quiet) {
         try {
           fs.writeFileSync(sessionFilePath, JSON.stringify(newData, null, 2), "utf8");
         } catch (err) {
+          // eslint-disable-next-line no-console
           console.error("Error writing session file:", err);
         }
       },
@@ -663,6 +670,8 @@ if (cli.flags.quiet) {
     onExit();
     process.exit(0);
   }
+
+} // end of quiet mode handling
 
 // Default to the "suggest" policy.
 // Determine the approval policy to use in interactive mode.
@@ -775,6 +784,7 @@ async function runQuietMode({
       console.log(formatResponseItemForQuietMode(item));
     },
     onLoading: () => {
+      // eslint-disable-next-line no-empty
       /* intentionally ignored in quiet mode */
     },
     getCommandConfirmation: (
@@ -788,6 +798,7 @@ async function runQuietMode({
       return Promise.resolve({ review: reviewDecision });
     },
     onLastResponseId: () => {
+      // eslint-disable-next-line no-empty
       /* intentionally ignored in quiet mode */
     },
   });

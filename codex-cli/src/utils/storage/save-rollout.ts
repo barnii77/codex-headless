@@ -20,7 +20,8 @@ async function saveRolloutAsync(
   const filePath = path.join(SESSIONS_ROOT, filename);
   const config = loadConfig();
   // Backup existing session file before writing, if enabled
-  if (process.env.CODEX_UPDATE_SESSION_FILE) {
+  // Use bracket notation to access dynamic env var keys
+  if (process.env['CODEX_UPDATE_SESSION_FILE']) {
     try {
       // Ensure the file exists
       await fs.stat(filePath);

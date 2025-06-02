@@ -80,6 +80,9 @@ export const OPENAI_PROJECT = process.env["OPENAI_PROJECT"] || "";
 export const CODEX_UNSAFE_ALLOW_NO_SANDBOX = Boolean(
   process.env["CODEX_UNSAFE_ALLOW_NO_SANDBOX"] || "",
 );
+export const CODEX_UNSAFE_FORCE_NO_SANDBOX = Boolean(
+  process.env["CODEX_UNSAFE_FORCE_NO_SANDBOX"] || "",
+);
 
 export function setApiKey(apiKey: string): void {
   OPENAI_API_KEY = apiKey;

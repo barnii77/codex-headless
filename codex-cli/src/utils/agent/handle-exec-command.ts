@@ -6,7 +6,7 @@ import type { ResponseInputItem } from "openai/resources/responses/responses.mjs
 import { canAutoApprove } from "../../approvals.js";
 import { formatCommandForDisplay } from "../../format-command.js";
 import { FullAutoErrorMode } from "../auto-approval-mode.js";
-import { CODEX_UNSAFE_ALLOW_NO_SANDBOX, type AppConfig } from "../config.js";
+import { CODEX_UNSAFE_ALLOW_NO_SANDBOX, CODEX_UNSAFE_FORCE_NO_SANDBOX, type AppConfig } from "../config.js";
 import { exec, execApplyPatch } from "./exec.js";
 import { ReviewDecision } from "./review.js";
 import { isLoggingEnabled, log } from "../logger/log.js";
@@ -292,7 +292,7 @@ const isSandboxExecAvailable: Promise<boolean> = fs
   );
 
 async function getSandbox(runInSandbox: boolean): Promise<SandboxType> {
-  if (runInSandbox) {
+  if (runInSandbox && !CODEX_UNSAFE_FORCE_NO_SANDBOX) {
     if (process.platform === "darwin") {
       // On macOS we rely on the system-provided `sandbox-exec` binary to
       // enforce the Seatbelt profile.  However, starting with macOS 14 the
